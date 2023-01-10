@@ -1,6 +1,9 @@
 use std::error::Error;
 use std::path::PathBuf;
 
+// TODO: add tests for parse_dir
+// TODO: setup CI on gitlab to run tests on every commit
+
 /// custom parser to validate that an arg is a directory
 #[allow(dead_code)]
 pub fn parse_dir(s: &str) -> Result<PathBuf, Box<dyn Error + Send + Sync + 'static>> {
