@@ -1,5 +1,7 @@
 use clap::Parser;
 use std::path::PathBuf;
+use std::env;
+use color_eyre::eyre::Result;
 
 extern crate utils_rs;
 use utils_rs::common::parsers;
@@ -10,6 +12,11 @@ struct Args {
     root: Option<PathBuf>,
 }
 
-fn main() {
-    println!("Hello (from broken_symlinks)");
+
+fn main() -> Result<()>{
+    let args = Args::parse();
+    let root_dir = args.root.unwrap_or(env::current_dir()?);
+    dbg!(&root_dir);
+
+    Ok(())
 }
