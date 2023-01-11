@@ -1,5 +1,5 @@
 use clap::Parser;
-use color_eyre::eyre::{eyre, Context, Result};
+use color_eyre::eyre::{Context, Result};
 use std::env;
 use std::fs::read_dir;
 use std::path::PathBuf;
