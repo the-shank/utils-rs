@@ -1,5 +1,5 @@
 use clap::Parser;
-use color_eyre::eyre::{eyre, Result};
+use color_eyre::eyre::{eyre, Context, Result};
 use std::env;
 use std::fs::read_dir;
 use std::path::PathBuf;
@@ -52,13 +52,18 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+// TODO: collect directories that cannot be read
+// TODO: collect entries that cannot be read
 fn process_dir(dir: &PathBuf, opts: &Opts) -> Result<()> {
     if opts.verbose {
         println!("Processing: {}", dir.display());
     }
 
-    for entry in read_dir(dir)? {
-        let entry = entry?;
+    for entry in
+        read_dir(dir).with_context(|| format!("error processing dir: {}", dir.display()))?
+    {
+        let entry =
+            entry.with_context(|| format!("error processing some file in {}", dir.display()))?;
         let file_type = entry.file_type()?;
 
         if file_type.is_dir() {
@@ -67,13 +72,11 @@ fn process_dir(dir: &PathBuf, opts: &Opts) -> Result<()> {
         } else if file_type.is_symlink() {
             // process symlink
             let target = entry.path();
-            match target.try_exists() {
-                Ok(_) => println!("Broken Symlink: {}", target.display()),
-                Err(_) => Err(eyre!(
-                    "Failed to check if symlink exists: {}",
-                    target.display()
-                ))?,
-            }
+            if !target.try_exists().with_context(|| {
+                format!("Failed to check if symlink exists: {}", target.display())
+            })? {
+                println!("Broken symlink: {}", target.display());
+            };
         }
     }
 
