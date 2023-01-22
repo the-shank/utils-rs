@@ -1,7 +1,7 @@
 use clap::Parser;
-use color_eyre::eyre::{Context, Result};
+use color_eyre::eyre::Result;
 use std::env;
-use std::fs::read_dir;
+use std::fs::{self, read_dir};
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -52,31 +52,50 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-// TODO: collect directories that cannot be read
-// TODO: collect entries that cannot be read
-fn process_dir(dir: &PathBuf, opts: &Opts) -> Result<()> {
+fn process_entry(entry: &fs::DirEntry, opts: &Opts) -> Result<()> {
     if opts.verbose {
-        println!("Processing: {}", dir.display());
+        println!("Processing entry: {:?}", entry.file_name());
     }
 
-    for entry in
-        read_dir(dir).with_context(|| format!("error processing dir: {}", dir.display()))?
-    {
-        let entry =
-            entry.with_context(|| format!("error processing some file in {}", dir.display()))?;
-        let file_type = entry.file_type()?;
+    let file_type = entry.file_type()?;
 
-        if file_type.is_dir() {
-            // process directory
-            process_dir(&entry.path(), opts)?;
-        } else if file_type.is_symlink() {
-            // process symlink
-            let target = entry.path();
-            if !target.try_exists().with_context(|| {
-                format!("Failed to check if symlink exists: {}", target.display())
-            })? {
-                println!("Broken symlink: {}", target.display());
-            };
+    if file_type.is_dir() {
+        // process directory
+        process_dir(&entry.path(), opts)?;
+    } else if file_type.is_symlink() {
+        // process symlink
+        let target = entry.path();
+        match target.try_exists() {
+            Ok(exists) => {
+                if !exists {
+                    println!("[Broken]: {}", target.display());
+                }
+            }
+            Err(e) => {
+                eprintln!("[error ({})]: {}", e.kind(), target.display(),);
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn process_dir(dir: &PathBuf, opts: &Opts) -> Result<()> {
+    if opts.verbose {
+        println!("Processing directory: {}", dir.display());
+    }
+
+    match read_dir(dir) {
+        Ok(dir) => {
+            // process the entries
+            for entry in dir {
+                let entry = entry?;
+                let _ = process_entry(&entry, opts);
+            }
+        }
+        Err(e) => {
+            // print the failures to stderr
+            eprintln!("[error ({})]: {}", e.kind(), dir.display(),);
         }
     }
 
