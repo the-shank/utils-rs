@@ -64,6 +64,7 @@ fn process_dir(dir: &PathBuf, opts: &Opts) -> Result<()> {
     {
         let entry =
             entry.with_context(|| format!("error processing some file in {}", dir.display()))?;
+
         let file_type = entry.file_type()?;
 
         if file_type.is_dir() {
@@ -71,11 +72,11 @@ fn process_dir(dir: &PathBuf, opts: &Opts) -> Result<()> {
             process_dir(&entry.path(), opts)?;
         } else if file_type.is_symlink() {
             // process symlink
-            let target = entry.path();
-            if !target.try_exists().with_context(|| {
-                format!("Failed to check if symlink exists: {}", target.display())
+            let path = entry.path();
+            if !path.try_exists().with_context(|| {
+                format!("Failed to check if symlink exists: {}", path.display())
             })? {
-                println!("Broken symlink: {}", target.display());
+                println!("Broken symlink: {}", path.display());
             };
         }
     }
