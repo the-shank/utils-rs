@@ -1,3 +1,5 @@
+//! Tool to identify all broken symlinks under a particular directory.
+
 use clap::Parser;
 use color_eyre::eyre::Result;
 use std::env;
