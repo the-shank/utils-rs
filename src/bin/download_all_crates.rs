@@ -4,6 +4,7 @@ use std::process::Command;
 use tracing::debug;
 use tracing::Level;
 
+// TODO: download dir should be provided by a command line argument
 const DOWNLOAD_DIR: &str = "/workdisk/shank/crates";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -29,6 +30,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     crate_releases.name(),
                     download_url
                 );
+
+                // TODO: add retries for failed downloads
 
                 let mut cmd = Command::new("wget");
                 cmd.arg("-c")
