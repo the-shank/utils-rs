@@ -4,6 +4,9 @@ use std::process::Command;
 use tracing::debug;
 use tracing::Level;
 
+// TODO: also add a file containing the date that the crates were downloaded
+// or add the date to the name of the downloads dir
+
 // TODO: download dir should be provided by a command line argument
 const DOWNLOAD_DIR: &str = "/workdisk/shank/crates";
 
