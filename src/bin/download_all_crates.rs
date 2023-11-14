@@ -1,4 +1,4 @@
-//! tool to download all the crates from crates.io
+//! Tool to download all the crates from crates.io.
 
 use std::process::Command;
 use tracing::debug;
