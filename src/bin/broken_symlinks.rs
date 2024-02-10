@@ -7,7 +7,6 @@ use std::fs::{self, read_dir};
 use std::path::PathBuf;
 use std::time::Instant;
 
-extern crate utils_rs;
 use utils_rs::common::parsers;
 
 /// A simple utility to find broken symlinks

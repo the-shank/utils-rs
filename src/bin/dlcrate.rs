@@ -18,7 +18,7 @@ fn download(name: &str, version: &str) -> Result<()> {
     let _ = Command::new("wget")
         .arg(&url)
         .arg("--output-document")
-        .arg(format!("{}-{}.tar.gz", name, version))
+        .arg(format!("{name}-{version}.tar.gz"))
         .status()
         .wrap_err_with(|| eyre!("Failed to download crate from {}", url))?;
     Ok(())
