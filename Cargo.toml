@@ -8,8 +8,9 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.0.32", features = ["derive"] }
 color-eyre = "0.6.2"
-crates-index = { version = "2.3.0", features = ["git-https"] }
+crates-index = { version = "2.5.1", features = ["git-https", "parallel"] }
 eyre = "0.6.12"
+rayon = "1.8.1"
 regex = "1.10.3"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }

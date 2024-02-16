@@ -2,15 +2,13 @@
 
 use clap::Parser;
 use eyre::{eyre, ContextCompat, Result};
+use rayon::prelude::*;
 use regex::Regex;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::str::FromStr;
-use tracing::level_filters::LevelFilter;
-use tracing::{debug, info};
-use tracing_subscriber::EnvFilter;
-use utils_rs::common::consts::LOGGER_NAME;
+use tracing::{debug, info, trace};
 
 // TODO: also add a file containing the date that the crates were downloaded
 // or add the date to the name of the downloads dir
@@ -96,49 +94,62 @@ fn main() -> Result<()> {
     };
 
     // apply regexp filtering (if applicable)
-    let filtered = index.crates().filter(|crate_release| {
-        if let Some(ref rexp) = regex {
-            rexp.is_match(crate_release.name())
-        } else {
-            true
-        }
-    });
+    let _: Vec<_> = index
+        .crates_parallel()
+        .filter(Result::is_ok)
+        .map(Result::unwrap)
+        .filter(|crate_release| {
+            if let Some(ref rexp) = regex {
+                let is_match = rexp.is_match(crate_release.name());
+                if is_match {
+                    trace!("matches regex (name:{})", crate_release.name());
+                } else {
+                    trace!("does not match regex (name:{})", crate_release.name());
+                }
+                is_match
+            } else {
+                true
+            }
+        })
+        .map(|crate_releases| {
+            if let Some(ver) = crate_releases.highest_normal_version() {
+                if let Some(download_url) = ver.download_url(&index_config) {
+                    info!(
+                        ">> downloading `{}` from {}",
+                        crate_releases.name(),
+                        download_url
+                    );
 
-    for crate_releases in filtered {
-        if let Some(ver) = crate_releases.highest_normal_version() {
-            if let Some(download_url) = ver.download_url(&index_config) {
-                info!(
-                    ">> downloading `{}` from {}",
-                    crate_releases.name(),
-                    download_url
-                );
+                    // TODO: add retries for failed downloads
 
-                // TODO: add retries for failed downloads
-
-                if !args.dry_run {
-                    let exit_code = download_crate_from_url(&download_url, &args.download_dir)?;
-                    debug!("wget exit_code : {exit_code}");
-
-                    if exit_code != 0 {
-                        continue;
-                    }
-
-                    // extract the archive and remove the archive after extracting it
-                    if args.extract {
-                        let downloaded_filename = format!("{}-{}.crate", ver.name(), ver.version());
-                        let exit_code = extract_archive(&downloaded_filename, &args.download_dir)?;
-                        debug!("tar exit_code : {exit_code}");
+                    if !args.dry_run {
+                        let exit_code =
+                            download_crate_from_url(&download_url, &args.download_dir).unwrap();
+                        debug!("wget exit_code : {exit_code}");
 
                         if exit_code == 0 {
-                            let downloaded_filepath =
-                                PathBuf::from_str(&args.download_dir)?.join(downloaded_filename);
-                            fs::remove_file(downloaded_filepath)?;
+                            // extract the archive and remove the archive after extracting it
+                            if args.extract {
+                                let downloaded_filename =
+                                    format!("{}-{}.crate", ver.name(), ver.version());
+                                let exit_code =
+                                    extract_archive(&downloaded_filename, &args.download_dir)
+                                        .unwrap();
+                                debug!("tar exit_code : {exit_code}");
+
+                                if exit_code == 0 {
+                                    let downloaded_filepath = PathBuf::from_str(&args.download_dir)
+                                        .unwrap()
+                                        .join(downloaded_filename);
+                                    fs::remove_file(downloaded_filepath).unwrap();
+                                }
+                            }
                         }
                     }
-                }
-            };
-        }
-    }
+                };
+            }
+        })
+        .collect();
 
     Ok(())
 }
