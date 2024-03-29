@@ -12,7 +12,17 @@ pub fn parse_dir(s: &str) -> Result<PathBuf> {
     if path.is_dir() {
         Ok(path)
     } else {
-        Err(eyre!(format!("{} is not a directory", s)))
+        Err(eyre!("{} is not a directory", s))
+    }
+}
+
+#[allow(dead_code)]
+pub fn parse_existing_file(path: &str) -> Result<PathBuf> {
+    let path = PathBuf::from(path);
+    if path.try_exists()? && path.is_file() {
+        Ok(path)
+    } else {
+        Err(eyre!("{} exists but is not a file", path.to_string_lossy()))
     }
 }
 
