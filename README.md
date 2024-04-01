@@ -7,14 +7,16 @@ Collection of utilities (written in rust)
 - `dlcrate` : Tool to download a specific crate from crates.io.
 - `cdf` : Tool to calculate the cumulative distribution function values.
 
-## `download_all_crates`
+## Sample Usage
 
-Sample usage:
+### `download_all_crates`
 
 ```bash
 # download all crates starting with "x"
 download_all_crates --download-dir=/path/to/crates_x --regexp="^x" --extract
 ```
+
+### `cdf`
 
 ```shell
 # takes input from stdin and writes to stdout
