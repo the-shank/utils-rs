@@ -1,13 +1,14 @@
 //! Tool to download all the crates from crates.io.
 
 use clap::Parser;
+use crates_index::Version;
 use eyre::{eyre, ContextCompat, Result};
 use rayon::prelude::*;
 use regex::Regex;
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::str::FromStr;
+use std::{fs, process};
 use tracing::{debug, info, trace};
 
 // TODO: also add a file containing the date that the crates were downloaded
@@ -43,14 +44,21 @@ fn setup_tracing() {
     tracing_subscriber::fmt::init();
 }
 
-fn download_crate_from_url<P: AsRef<Path>>(url: &str, download_dir: P) -> Result<i32> {
+fn download_crate_from_url<P: AsRef<Path>>(
+    url: &str,
+    download_dir: P,
+    ver: &Version,
+) -> Result<i32> {
     Command::new("wget")
         .arg("-c")
         .arg("--no-verbose")
-        .arg("--content-disposition") // to keep the crate name
-        .arg("--directory-prefix")
-        .arg(download_dir.as_ref())
+        // .arg("--content-disposition") // to keep the crate name
+        // .arg("--directory-prefix")
+        // .arg(download_dir.as_ref())
+        .arg("--output-document")
+        .arg(format!("{}-{}.crate", ver.name(), ver.version()))
         .arg(url)
+        .current_dir(download_dir.as_ref())
         .stdout(Stdio::null())
         .status()?
         .code()
@@ -84,6 +92,9 @@ fn main() -> Result<()> {
     let mut index = crates_index::GitIndex::new_cargo_default()?;
     info!("Updating index...");
     index.update()?;
+
+    debug!(">> index updated.");
+
     let index_config = index.index_config()?;
 
     // regex?
@@ -124,7 +135,8 @@ fn main() -> Result<()> {
 
                     if !args.dry_run {
                         let exit_code =
-                            download_crate_from_url(&download_url, &args.download_dir).unwrap();
+                            download_crate_from_url(&download_url, &args.download_dir, ver)
+                                .unwrap();
                         debug!("wget exit_code : {exit_code}");
 
                         if exit_code == 0 {
